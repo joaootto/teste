@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Treino Tracker</title>
+<style>
+:root {
+  --bg: #0d0f14;
+  --surface: #161a24;
+  --surface2: #1e2330;
+  --border: #2a3045;
+  --accent: #4f7cff;
+  --green: #3ddc84;
+  --red: #ff4f6b;
+  --yellow: #ffc84f;
+  --text: #e8ecf4;
+  --muted: #6b7591;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding-bottom: 100px; }
+
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+.header-title { font-size: 24px; font-weight: 900; letter-spacing: 3px; color: var(--accent); }
+.header-date { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+.tabs { display: flex; background: var(--surface); border-bottom: 2px solid var(--border); overflow-x: auto; scrollbar-width: none; position: sticky; top: 53px; z-index: 99; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { padding: 13px 20px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--muted); cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; flex-shrink: 0; transition: color .2s; }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+
+.date-bar { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+.date-bar label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+.date-bar input[type=date] { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; padding: 7px 10px; flex: 1; min-width: 0; -webkit-appearance: none; }
+
+.ex-group { margin-bottom: 20px; }
+.ex-name { font-size: 15px; font-weight: 800; padding: 8px 0 6px; border-bottom: 2px solid var(--border); margin-bottom: 8px; }
+
+.prev-row { background: rgba(255,255,255,.03); border: 1px dashed var(--border); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.prev-tag { font-size: 10px; font-weight: 700; color: var(--muted); background: var(--surface2); padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.prev-info { font-size: 12px; color: var(--muted); }
+
+.series-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; gap: 8px; align-items: flex-end; }
+.s-num { font-size: 22px; font-weight: 900; color: var(--accent); min-width: 30px; padding-bottom: 4px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 17px; font-weight: 700; padding: 10px 6px; width: 100%; text-align: center; -webkit-appearance: none; appearance: none; }
+.field input:focus { outline: none; border-color: var(--accent); background: var(--bg); }
+
+.badge { font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 10px; }
+.bu { background: rgba(61,220,132,.2); color: var(--green); }
+.bd { background: rgba(255,79,107,.2); color: var(--red); }
+.bs { background: rgba(255,200,79,.15); color: var(--yellow); }
+
+.finish-btn { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff; border: none; border-radius: 50px; font-size: 15px; font-weight: 900; letter-spacing: 2px; padding: 16px 36px; cursor: pointer; box-shadow: 0 8px 30px rgba(79,124,255,.5); z-index: 200; white-space: nowrap; }
+.finish-btn:active { opacity: .85; }
+
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 300; align-items: center; justify-content: center; padding: 24px; }
+.modal-bg.open { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 22px; max-width: 320px; width: 100%; text-align: center; }
+.modal-icon { font-size: 42px; margin-bottom: 10px; }
+.modal-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; }
+.modal-text { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.modal-btns { display: flex; gap: 10px; }
+.mbtn { flex: 1; padding: 14px; border-radius: 12px; border: none; font-size: 14px; font-weight: 900; letter-spacing: 1px; cursor: pointer; }
+.mbtn:active { opacity: .8; }
+.mbtn.ok { background: var(--green); color: #0d0f14; }
+.mbtn.no { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+.history-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.ht { font-size: 15px; font-weight: 800; color: var(--accent); }
+.hd { font-size: 11px; color: var(--muted); }
+.hr { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.hr:last-child { border-bottom: none; }
+.hex { color: var(--muted); flex: 1; margin-right: 8px; }
+.hv { font-weight: 700; font-size: 12px; white-space: nowrap; }
+
+.empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+.eicon { font-size: 44px; margin-bottom: 12px; }
+.empty p { font-size: 14px; line-height: 1.8; }
+
+.toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%); background: var(--green); color: #0d0f14; font-weight: 900; font-size: 13px; letter-spacing: 1px; padding: 12px 24px; border-radius: 50px; z-index: 400; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">TREINO</div>
+  <div class="header-date" id="hdate"></div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-key="a1">A1</div>
+  <div class="tab" data-key="p1">P1</div>
+  <div class="tab" data-key="p2">P2</div>
+  <div class="tab" data-key="hist">HISTÓRICO</div>
+</div>
+
+<div id="page-a1" class="page active"></div>
+<div id="page-p1" class="page"></div>
+<div id="page-p2" class="page"></div>
+<div id="page-hist" class="page"></div>
+
+<button class="finish-btn" id="finBtn">FINALIZAR TREINO ✓</button>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-icon">💪</div>
+    <div class="modal-title">FINALIZAR?</div>
+    <div class="modal-text">O treino atual vai pro histórico e vira referência pra comparar na próxima sessão.</div>
+    <div class="modal-btns">
+      <button class="mbtn no" id="mno">CANCELAR</button>
+      <button class="mbtn ok" id="mok">CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ TREINO SALVO!</div>
+
+<script>
+var T = {
+  a1: {
+    label: "A1 — EMPURRAR",
+    color: "#4f7cff",
+    ex: [
+      {n:"Elevação Lateral na Máquina", s:3},
+      {n:"Supino Articulado", s:1},
+      {n:"Extensora", s:3},
+      {n:"Desenvolvimento Máquina", s:2},
+      {n:"Fly", s:3},
+      {n:"Tríceps Costas pra Polia", s:2},
+      {n:"Adutora", s:2}
+    ]
+  },
+  p1: {
+    label: "P1 — PUXAR",
+    color: "#3ddc84",
+    ex: [
+      {n:"Triângulo", s:2},
+      {n:"T-Bar Row", s:2},
+      {n:"SLDL", s:1},
+      {n:"Panturrilha", s:2},
+      {n:"Mesa Flexora", s:2},
+      {n:"Puxada Aberta", s:2},
+      {n:"Bíceps", s:2},
+      {n:"Pélvica", s:2},
+      {n:"Post Ombro", s:1}
+    ]
+  },
+  p2: {
+    label: "P2 — PUXAR 2",
+    color: "#c97fff",
+    ex: [
+      {n:"Panturrilha", s:2},
+      {n:"Bíceps", s:2},
+      {n:"Triângulo", s:2},
+      {n:"T-Bar Row", s:2},
+      {n:"SLDL", s:1},
+      {n:"Puxada Aberta", s:2},
+      {n:"Pélvica", s:2},
+      {n:"Post Ombro", s:1}
+    ]
+  }
+};
+
+var cur = 'a1';
+var ST = {};
+var HI = [];
+
+function lget(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+function lset(k,v) { try { localStorage.setItem(k,v); } catch(e) {} }
+function load() {
+  try { ST = JSON.parse(lget('st') || '{}'); } catch(e) { ST = {}; }
+  try { HI = JSON.parse(lget('hi') || '[]'); } catch(e) { HI = []; }
+}
+function save() { lset('st', JSON.stringify(ST)); lset('hi', JSON.stringify(HI)); }
+
+load();
+
+var now = new Date();
+document.getElementById('hdate').textContent =
+  now.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'}).toUpperCase();
+
+// Tabs
+document.getElementById('tabs').addEventListener('click', function(e) {
+  var tab = e.target.closest('.tab');
+  if (!tab) return;
+  var key = tab.getAttribute('data-key');
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  tab.classList.add('active');
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('page-'+key).classList.add('active');
+  cur = key;
+  document.getElementById('finBtn').style.display = key === 'hist' ? 'none' : 'block';
+  if (key === 'hist') renderHist();
+  else renderT(key);
+});
+
+function badge(a, b, u) {
+  if (a === '' || b === '') return '';
+  var av = parseFloat(a), bv = parseFloat(b);
+  if (isNaN(av) || isNaN(bv)) return '';
+  var d = av - bv;
+  if (d > 0) return '<span class="badge bu">+'+d+(u||'')+'</span>';
+  if (d < 0) return '<span class="badge bd">'+d+(u||'')+'</span>';
+  return '<span class="badge bs">='+(u||'')+'</span>';
+}
+
+function renderT(key) {
+  var t = T[key];
+  var today = new Date().toISOString().split('T')[0];
+  var dv = ST[key+'_d'] || today;
+  var h = '';
+
+  h += '<div class="date-bar"><label>DATA</label>';
+  h += '<input type="date" id="di_'+key+'" value="'+dv+'">';
+  h += '</div>';
+
+  for (var i = 0; i < t.ex.length; i++) {
+    var ex = t.ex[i];
+    h += '<div class="ex-group">';
+    h += '<div class="ex-name" style="color:'+t.color+'">'+ex.n+'</div>';
+    for (var s = 1; s <= ex.s; s++) {
+      var rk='r_'+key+'_'+i+'_'+s, wk='w_'+key+'_'+i+'_'+s;
+      var prk='pr_'+key+'_'+i+'_'+s, pwk='pw_'+key+'_'+i+'_'+s;
+      var rv=ST[rk]||'', wv=ST[wk]||'';
+      var prv=ST[prk]||'', pwv=ST[pwk]||'';
+
+      if (prv !== '' || pwv !== '') {
+        h += '<div class="prev-row"><span class="prev-tag">ANT</span>';
+        h += '<span class="prev-info">'+(prv||'—')+' reps &nbsp;•&nbsp; '+(pwv ? pwv+'kg' : '—')+'</span></div>';
+      }
+
+      h += '<div class="series-row"><span class="s-num">S'+s+'</span>';
+      h += '<div class="field"><label>REPS '+badge(rv,prv,'')+'</label>';
+      h += '<input type="number" inputmode="numeric" pattern="[0-9]*" placeholder="0" value="'+rv+'" id="'+rk+'" onchange="upd(\''+rk+'\',this.value)"></div>';
+      h += '<div class="field"><label>PESO kg '+badge(wv,pwv,'kg')+'</label>';
+      h += '<input type="number" inputmode="decimal" pattern="[0-9.]*" step="0.5" placeholder="0" value="'+wv+'" id="'+wk+'" onchange="upd(\''+wk+'\',this.value)"></div>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+
+  document.getElementById('page-'+key).innerHTML = h;
+
+  // bind date change after render
+  var di = document.getElementById('di_'+key);
+  if (di) di.addEventListener('change', function(){ ST[key+'_d'] = this.value; save(); });
+}
+
+function upd(k, v) { ST[k] = v; save(); }
+
+function renderHist() {
+  var el = document.getElementById('page-hist');
+  if (!HI.length) {
+    el.innerHTML = '<div class="empty"><div class="eicon">📋</div><p>Nenhum treino finalizado ainda.<br>Preencha e toque em <strong>FINALIZAR</strong>.</p></div>';
+    return;
+  }
+  var h = '';
+  for (var i = 0; i < HI.length; i++) {
+    var e = HI[i];
+    var d = new Date(e.date+'T12:00:00');
+    var ds = d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    h += '<div class="history-card"><div class="history-head"><span class="ht">'+e.treino+'</span><span class="hd">'+ds+'</span></div>';
+    for (var j = 0; j < e.ex.length; j++) {
+      var x = e.ex[j];
+      h += '<div class="hr"><span class="hex">'+x.n+' S'+x.s+'</span><span class="hv">'+(x.r||'—')+'x &nbsp;'+(x.w ? x.w+'kg' : '—')+'</span></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+// Modal
+document.getElementById('finBtn').addEventListener('click', function(){ document.getElementById('modal').classList.add('open'); });
+document.getElementById('mno').addEventListener('click', function(){ document.getElementById('modal').classList.remove('open'); });
+document.getElementById('mok').addEventListener('click', function(){
+  document.getElementById('modal').classList.remove('open');
+  finishT();
+});
+
+function finishT() {
+  var key = cur;
+  var t = T[key];
+  if (!t) return;
+  var today = new Date().toISOString().split('T')[0];
+  var dv = ST[key+'_d'] || today;
+  var entry = {treino: t.label, date: dv, ex: []};
+
+  for (var i = 0; i < t.ex.length; i++) {
+    var ex = t.ex[i];
+    for (var s = 1; s <= ex.s; s++) {
+      var rk='r_'+key+'_'+i+'_'+s, wk='w_'+key+'_'+i+'_'+s;
+      var prk='pr_'+key+'_'+i+'_'+s, pwk='pw_'+key+'_'+i+'_'+s;
+      var rv=ST[rk]||'', wv=ST[wk]||'';
+      if (rv !== '' || wv !== '') entry.ex.push({n:ex.n, s:s, r:rv, w:wv});
+      ST[prk] = rv; ST[pwk] = wv;
+      delete ST[rk]; delete ST[wk];
+    }
+  }
+  ST[key+'_d'] = today;
+  HI.unshift(entry);
+  save();
+  renderT(key);
+
+  var toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+}
+
+// Init
+renderT('a1');
+</script>
+</body>
+</html>
